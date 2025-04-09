@@ -1,6 +1,6 @@
 ---
-title: Simple Chat Commands
-description: Custom commands using scripts.
+title: Basic Chat Commands
+description: Custom commands using scripts, before the CustomCommandRegistry comes out.
 category: Tutorials
 tags:
     - experimental
@@ -20,6 +20,7 @@ mentions:
     - modmaker101
     - SimpleDevMCBE
     - QuazChick
+    - forestJAVASCRIPT
 ---
 
 ::: warning
@@ -91,24 +92,49 @@ Now comes the fun part - creating our custom commands. First, we will add the mo
 import { world } from "@minecraft/server";
 ```
 
-Next, we will add simple commands, such as `!gmc` to change our gamemode to creative and `!gms` to change into survival.
+Next, we will make an array of commands that can be used and add a prefix that can later be changed
+In this case, we'll use gamemode commands
 
 <CodeHeader>BP/scripts/main.js</CodeHeader>
 
 ```js
-world.beforeEvents.chatSend.subscribe((eventData) => {
-    const player = eventData.sender;
-    switch (eventData.message) {
-        case "!gmc":
-            eventData.cancel = true;
-            player.runCommandAsync("gamemode c");
-            break;
-        case "!gms":
-            eventData.cancel = true;
-            player.runCommandAsync("gamemode s");
-            break;
-        default:
-            break;
+world.beforeEvents.chatSend.subscribe((res) => {
+    const { sender: player, message: msg } = res;
+    let commands = [
+        "gmc",
+        "gma",
+        "gms",
+        "gmspect"
+    ];
+
+    const prefix = "!";
+
+    try {
+        res.cancel = true; // Makes the message not appear in chat
+        if (!msg.startsWith(prefix)) return; // If the command doesn't start with our prefix, stop the code.
+
+        const command = msg.slice(1).trim(); // This becomes the command, the prefix is sliced out.
+        if (command.length === 0) throw "Please enter a command!";
+        if (!commands.includes(command)) throw "Invalid command.";
+        
+        switch (command) {
+            case "gmc":
+                player.setGameMode(GameMode.creative);
+                break;
+            case "gma":
+                player.setGameMode(GameMode.adventure);
+                break;
+            case "gms":
+                player.setGameMode(GameMode.survival);
+                break;
+            case "gmspect":
+                player.setGameMode(GameMode.spectator);
+                break;
+        } // We can do better than this, but for readability and understanding the code, I will stick with a switch statement.
+
+
+    } catch(err) {
+        player.sendMessage(err)
     }
 });
 ```
@@ -116,9 +142,11 @@ world.beforeEvents.chatSend.subscribe((eventData) => {
 This is the main function to execute our commands. `world.beforeEvents.chatSend.subscribe()` will run before chat messages get sent.
 
 -   A `switch` statement runs through the possible options for the value, and if it matches, runs the code until the next `break` statement.
--   `eventData.cancel = true` will cancel the chat message that will be sent- similar to how vanilla commands work.
--   `const player = eventData.sender` declares the variable `player` to be used later.
--   `player.runCommandAsync('gamemode c')` runs the command on the sender of the message.
+-   `res.cancel = true` will cancel the chat message that will be sent- similar to how vanilla commands work.
+-   `const player = data.sender` declares the variable `player` to be used later.
+-   `player.setGameMode` is a method that allows us to set the gamemode of a player without commands.
+
+-   `try{} catch(err){}` Attempts code and if there are errors, catches them.
 
 ## Limited Command Usage by Tags
 
@@ -129,22 +157,44 @@ For example, let's make our commands usable only to players that have the `Admin
 <CodeHeader>BP/scripts/main.js</CodeHeader>
 
 ```js
-import { world } from "@minecraft/server";
+world.beforeEvents.chatSend.subscribe((res) => {
+    const { sender: player, message: msg } = res;
+    let commands = [
+        "gmc",
+        "gma",
+        "gms",
+        "gmspect"
+    ];
 
-world.beforeEvents.chatSend.subscribe((eventData) => {
-    const player = eventData.sender;
-    if (!player.hasTag("Admin")) return;
-    switch (eventData.message) {
-        case "!gmc":
-            eventData.cancel = true;
-            player.runCommandAsync("gamemode c");
-            break;
-        case "!gms":
-            eventData.cancel = true;
-            player.runCommandAsync("gamemode s");
-            break;
-        default:
-            break;
+    const prefix = "!";
+
+    try {
+        res.cancel = true; // Makes the message not appear in chat
+        if(!player.hasTag('Admin') return;
+        if (!msg.startsWith(prefix)) return; // If the command doesn't start with our prefix, stop the code.
+
+        const command = msg.slice(1).trim(); // This becomes the command, the prefix is sliced out.
+        if (command.length === 0) throw "Please enter a command!";
+        if (!commands.includes(command)) throw "Invalid command.";
+        
+        switch (command) {
+            case "gmc":
+                player.setGameMode(GameMode.creative);
+                break;
+            case "gma":
+                player.setGameMode(GameMode.adventure);
+                break;
+            case "gms":
+                player.setGameMode(GameMode.survival);
+                break;
+            case "gmspect":
+                player.setGameMode(GameMode.spectator);
+                break;
+        } // We can do better than this, but for readability and understanding the code, I will stick with a switch statement.
+
+
+    } catch(err) {
+        player.sendMessage(err)
     }
 });
 ```
